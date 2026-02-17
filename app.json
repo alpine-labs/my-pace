@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "my-pace-temp",
-    "slug": "my-pace-temp",
+    "name": "MyPace",
+    "slug": "my-pace",
+    "scheme": "mypace",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
