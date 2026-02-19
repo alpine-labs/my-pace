@@ -9,6 +9,7 @@ import type {
   FavoriteFood,
   DailySummary,
 } from '../types';
+import { DEFAULT_EXERCISES } from '../constants/exercises';
 
 const db = SQLite.openDatabaseSync('mypace.db');
 
@@ -103,6 +104,32 @@ export function initDatabase(): void {
         sodium_mg REAL
       );
     `);
+
+    // Seed default exercises if catalog is empty
+    const count = db.getFirstSync<{ count: number }>(
+      'SELECT COUNT(*) AS count FROM exercise_catalog'
+    )?.count ?? 0;
+
+    if (count === 0) {
+      for (const exercise of DEFAULT_EXERCISES) {
+        db.runSync(
+          `INSERT OR REPLACE INTO exercise_catalog (id, name, description, instructions, category, image_uri, difficulty_level, source)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            exercise.id,
+            exercise.name,
+            exercise.description,
+            typeof exercise.instructions === 'string'
+              ? exercise.instructions
+              : JSON.stringify(exercise.instructions),
+            exercise.category,
+            exercise.image_uri,
+            exercise.difficulty_level,
+            exercise.source,
+          ]
+        );
+      }
+    }
   } catch (error) {
     console.error('Failed to initialize database:', error);
     throw error;

@@ -38,9 +38,22 @@ export default function ExercisesScreen() {
   async function loadExercises() {
     try {
       const { useExerciseStore } = await import('../../stores/exercise-store');
+      useExerciseStore.getState().loadCatalog();
       const all = useExerciseStore.getState().exercises ?? [];
-      setExercises(all);
-    } catch {}
+      if (all.length > 0) {
+        setExercises(all);
+      } else {
+        // Fallback to in-memory defaults if DB not ready
+        const { DEFAULT_EXERCISES } = await import('../../constants/exercises');
+        setExercises(DEFAULT_EXERCISES);
+      }
+    } catch {
+      // Last resort fallback
+      try {
+        const { DEFAULT_EXERCISES } = await import('../../constants/exercises');
+        setExercises(DEFAULT_EXERCISES);
+      } catch {}
+    }
   }
 
   const handleOnlineSearch = useCallback(async () => {
