@@ -64,7 +64,14 @@ export default function ExercisesScreen() {
       await useExerciseStore.getState().searchExercises(searchQuery.trim());
       setOnlineResults(useExerciseStore.getState().searchResults);
     } catch {
-      setOnlineResults([]);
+      // Fallback: call wger API directly if store fails
+      try {
+        const { searchExercises } = await import('../../lib/wger-api');
+        const directResults = await searchExercises(searchQuery.trim());
+        setOnlineResults(directResults);
+      } catch {
+        setOnlineResults([]);
+      }
     } finally {
       setIsSearchingOnline(false);
     }

@@ -64,7 +64,14 @@ export default function NutritionScreen() {
       await useFoodStore.getState().searchFoods(query.trim(), getUsdaApiKey());
       setResults(useFoodStore.getState().searchResults);
     } catch {
-      setResults([]);
+      // Fallback: call USDA API directly if store fails (e.g. SQLite unavailable on web)
+      try {
+        const { searchFoods } = await import('../../lib/usda-api');
+        const directResults = await searchFoods(query.trim(), getUsdaApiKey());
+        setResults(directResults);
+      } catch {
+        setResults([]);
+      }
     } finally {
       setSearching(false);
     }
