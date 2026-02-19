@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../constants/theme';
+import { getUsdaApiKey } from '../../lib/config';
 import type { FoodLogEntry, USDASearchResult } from '../../types';
 
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
@@ -60,7 +61,7 @@ export default function NutritionScreen() {
     setSearching(true);
     try {
       const { useFoodStore } = await import('../../stores/food-store');
-      await useFoodStore.getState().searchFoods(query.trim());
+      await useFoodStore.getState().searchFoods(query.trim(), getUsdaApiKey());
       setResults(useFoodStore.getState().searchResults);
     } catch {
       setResults([]);

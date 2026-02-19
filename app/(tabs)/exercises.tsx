@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -26,6 +27,9 @@ export default function ExercisesScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<typeof CATEGORIES[number]>('All');
+  const [onlineResults, setOnlineResults] = useState<Exercise[]>([]);
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
+  const [searchMode, setSearchMode] = useState<'local' | 'online'>('local');
 
   useEffect(() => {
     loadExercises();
@@ -39,6 +43,20 @@ export default function ExercisesScreen() {
     } catch {}
   }
 
+  const handleOnlineSearch = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearchingOnline(true);
+    try {
+      const { useExerciseStore } = await import('../../stores/exercise-store');
+      await useExerciseStore.getState().searchExercises(searchQuery.trim());
+      setOnlineResults(useExerciseStore.getState().searchResults);
+    } catch {
+      setOnlineResults([]);
+    } finally {
+      setIsSearchingOnline(false);
+    }
+  }, [searchQuery]);
+
   const filtered = exercises.filter((e) => {
     const matchesCategory =
       selectedCategory === 'All' || e.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -46,6 +64,8 @@ export default function ExercisesScreen() {
       !searchQuery.trim() || e.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const displayedExercises = searchMode === 'online' ? onlineResults : filtered;
 
   const handleLogExercise = useCallback(async (exercise: Exercise) => {
     try {
@@ -66,7 +86,13 @@ export default function ExercisesScreen() {
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.colors.background },
     content: { flex: 1, padding: theme.spacing.md },
+    searchRow: {
+      flexDirection: 'row',
+      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
     searchInput: {
+      flex: 1,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -75,7 +101,41 @@ export default function ExercisesScreen() {
       paddingVertical: 14,
       fontSize: 18,
       color: theme.colors.text,
+    },
+    searchBtn: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: theme.spacing.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: 56,
+    },
+    modeRow: {
+      flexDirection: 'row',
       marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    modeBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: theme.borderRadius.sm,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      alignItems: 'center',
+      minHeight: 48,
+      justifyContent: 'center',
+    },
+    modeBtnActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    modeBtnText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+    },
+    modeBtnTextActive: {
+      color: theme.colors.primaryText,
     },
     categoryRow: {
       flexDirection: 'row',
@@ -222,46 +282,90 @@ export default function ExercisesScreen() {
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.content}>
-        {/* Search */}
-        <TextInput
-          style={s.searchInput}
-          placeholder="Search exercises..."
-          placeholderTextColor={theme.colors.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          accessibilityLabel="Search exercises"
-        />
+        {/* Local / Online toggle */}
+        <View style={s.modeRow}>
+          <TouchableOpacity
+            style={[s.modeBtn, searchMode === 'local' && s.modeBtnActive]}
+            onPress={() => setSearchMode('local')}
+            accessibilityLabel="My exercises"
+          >
+            <Text style={[s.modeBtnText, searchMode === 'local' && s.modeBtnTextActive]}>
+              My Exercises
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.modeBtn, searchMode === 'online' && s.modeBtnActive]}
+            onPress={() => setSearchMode('online')}
+            accessibilityLabel="Search online"
+          >
+            <Text style={[s.modeBtnText, searchMode === 'online' && s.modeBtnTextActive]}>
+              Search Online
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Category filters */}
-        <FlatList
-          horizontal
-          data={CATEGORIES as unknown as typeof CATEGORIES[number][]}
-          keyExtractor={(item) => item}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.categoryRow}
-          renderItem={({ item: cat }) => (
+        {/* Search */}
+        <View style={s.searchRow}>
+          <TextInput
+            style={s.searchInput}
+            placeholder={searchMode === 'online' ? 'Search wger.de exercises...' : 'Filter exercises...'}
+            placeholderTextColor={theme.colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={searchMode === 'online' ? handleOnlineSearch : undefined}
+            returnKeyType={searchMode === 'online' ? 'search' : 'done'}
+            accessibilityLabel="Search exercises"
+          />
+          {searchMode === 'online' && (
             <TouchableOpacity
-              style={[s.categoryBtn, selectedCategory === cat && s.categoryBtnActive]}
-              onPress={() => setSelectedCategory(cat)}
-              accessibilityLabel={`Filter by ${cat}`}
+              style={s.searchBtn}
+              onPress={handleOnlineSearch}
+              accessibilityLabel="Search online exercises"
             >
-              <Text
-                style={[s.categoryText, selectedCategory === cat && s.categoryTextActive]}
-              >
-                {cat}
-              </Text>
+              <Ionicons name="search" size={24} color="#FFFFFF" />
             </TouchableOpacity>
           )}
-        />
+        </View>
+
+        {/* Category filters (local mode only) */}
+        {searchMode === 'local' && (
+          <FlatList
+            horizontal
+            data={CATEGORIES as unknown as typeof CATEGORIES[number][]}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.categoryRow}
+            renderItem={({ item: cat }) => (
+              <TouchableOpacity
+                style={[s.categoryBtn, selectedCategory === cat && s.categoryBtnActive]}
+                onPress={() => setSelectedCategory(cat)}
+                accessibilityLabel={`Filter by ${cat}`}
+              >
+                <Text
+                  style={[s.categoryText, selectedCategory === cat && s.categoryTextActive]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+
+        {/* Loading indicator */}
+        {isSearchingOnline && <ActivityIndicator size="large" color={theme.colors.primary} />}
 
         {/* Exercise list */}
         <FlatList
-          data={filtered}
+          data={displayedExercises}
           keyExtractor={(item) => item.id}
           renderItem={renderExercise}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={s.emptyText}>No exercises found.</Text>
+            <Text style={s.emptyText}>
+              {searchMode === 'online'
+                ? 'Search above to find exercises from wger.de'
+                : 'No exercises found.'}
+            </Text>
           }
         />
       </View>

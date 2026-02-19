@@ -17,6 +17,7 @@ export interface User {
   walking_program_week: number;
   theme_preference: ThemeMode;
   notifications_enabled: number;
+  usda_api_key: string;
   created_at: string;
 }
 

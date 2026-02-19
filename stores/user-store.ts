@@ -12,6 +12,7 @@ interface UserState {
   walkingProgramWeek: number;
   themeMode: 'light' | 'dark';
   notificationsEnabled: boolean;
+  usdaApiKey: string;
   isLoaded: boolean;
 
   initUser: () => void;
@@ -24,6 +25,7 @@ interface UserState {
   setNotifications: (enabled: boolean) => void;
   setName: (name: string) => void;
   setWalkingProgramStart: (date: string) => void;
+  setUsdaApiKey: (key: string) => void;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -36,6 +38,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   walkingProgramWeek: 1,
   themeMode: 'light',
   notificationsEnabled: true,
+  usdaApiKey: '',
   isLoaded: false,
 
   initUser: () => {
@@ -51,6 +54,7 @@ export const useUserStore = create<UserState>((set, get) => ({
         walkingProgramWeek: user.walking_program_week,
         themeMode: (user.theme_preference as 'light' | 'dark') ?? 'light',
         notificationsEnabled: user.notifications_enabled === 1,
+        usdaApiKey: user.usda_api_key ?? '',
         isLoaded: true,
       });
     } catch (error) {
@@ -114,6 +118,16 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ walkingProgramStartDate: date, walkingProgramWeek: 1 });
     } catch (error) {
       console.error('Failed to set walking program start:', error);
+    }
+  },
+
+  setUsdaApiKey: (key: string) => {
+    const { userId } = get();
+    try {
+      updateUser(userId, { usda_api_key: key });
+      set({ usdaApiKey: key });
+    } catch (error) {
+      console.error('Failed to set USDA API key:', error);
     }
   },
 }));

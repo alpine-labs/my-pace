@@ -20,6 +20,7 @@ export default function SettingsScreen() {
   const [proteinGoal, setProteinGoal] = useState('50');
   const [sodiumGoal, setSodiumGoal] = useState('2300');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [usdaApiKey, setUsdaApiKey] = useState('');
 
   useEffect(() => {
     loadSettings();
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
       setProteinGoal(String(state.proteinGoal ?? 50));
       setSodiumGoal(String(state.sodiumGoal ?? 2300));
       setNotificationsEnabled(state.notificationsEnabled ?? true);
+      setUsdaApiKey(state.usdaApiKey ?? '');
     } catch {}
   }
 
@@ -63,6 +65,14 @@ export default function SettingsScreen() {
     try {
       const { useUserStore } = await import('../stores/user-store');
       useUserStore.getState().setNotifications(value);
+    } catch {}
+  };
+
+  const saveUsdaApiKey = async () => {
+    try {
+      const { useUserStore } = await import('../stores/user-store');
+      useUserStore.getState().setUsdaApiKey(usdaApiKey.trim());
+      Alert.alert('Saved', usdaApiKey.trim() ? 'USDA API key saved.' : 'Cleared — using demo key (rate-limited).');
     } catch {}
   };
 
@@ -257,6 +267,34 @@ export default function SettingsScreen() {
               accessibilityLabel="Toggle notifications"
             />
           </View>
+        </View>
+
+        {/* USDA API Key */}
+        <Text style={s.sectionTitle}>Nutrition API</Text>
+        <View style={s.card}>
+          <View style={s.inputGroup}>
+            <Text style={s.inputLabel}>USDA API Key</Text>
+            <Text style={s.sublabel}>
+              Get a free key at fdc.nal.usda.gov/api-key-signup
+            </Text>
+            <TextInput
+              style={[s.input, { marginTop: 8 }]}
+              value={usdaApiKey}
+              onChangeText={setUsdaApiKey}
+              placeholder="DEMO_KEY (rate-limited)"
+              placeholderTextColor={theme.colors.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel="USDA API key"
+            />
+          </View>
+          <TouchableOpacity
+            style={s.saveBtn}
+            onPress={saveUsdaApiKey}
+            accessibilityLabel="Save API key"
+          >
+            <Text style={s.saveBtnText}>Save API Key</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Walking program */}

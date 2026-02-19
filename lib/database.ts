@@ -27,6 +27,7 @@ export function initDatabase(): void {
         walking_program_week INTEGER DEFAULT 1,
         theme_preference TEXT DEFAULT 'light',
         notifications_enabled INTEGER DEFAULT 1,
+        usda_api_key TEXT DEFAULT '',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       );
     `);

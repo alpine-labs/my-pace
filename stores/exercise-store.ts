@@ -5,10 +5,13 @@ import {
   insertExerciseLog,
   deleteExerciseLog as dbDeleteExerciseLog,
 } from '../lib/database';
+import { searchExercises as wgerSearchExercises } from '../lib/wger-api';
 import type { Exercise, ExerciseLogEntry } from '../types';
 
 interface ExerciseState {
   exercises: Exercise[];
+  searchResults: Exercise[];
+  isSearching: boolean;
   dailyExerciseLog: ExerciseLogEntry[];
   selectedDate: string;
 
@@ -16,10 +19,14 @@ interface ExerciseState {
   loadDailyLog: (date: string) => void;
   logExercise: (entry: Omit<ExerciseLogEntry, 'id' | 'created_at'>) => void;
   deleteExerciseLog: (id: number) => void;
+  searchExercises: (query: string) => Promise<void>;
+  clearSearchResults: () => void;
 }
 
 export const useExerciseStore = create<ExerciseState>((set, get) => ({
   exercises: [],
+  searchResults: [],
+  isSearching: false,
   dailyExerciseLog: [],
   selectedDate: new Date().toISOString().split('T')[0],
 
@@ -63,5 +70,20 @@ export const useExerciseStore = create<ExerciseState>((set, get) => ({
     } catch (error) {
       console.error('Failed to delete exercise log:', error);
     }
+  },
+
+  searchExercises: async (query: string) => {
+    set({ isSearching: true });
+    try {
+      const results = await wgerSearchExercises(query);
+      set({ searchResults: results, isSearching: false });
+    } catch (error) {
+      console.error('Failed to search exercises:', error);
+      set({ searchResults: [], isSearching: false });
+    }
+  },
+
+  clearSearchResults: () => {
+    set({ searchResults: [] });
   },
 }));
